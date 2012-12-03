@@ -11,34 +11,28 @@
 #define CLOSE_WAIT 9
 #define LAST_ACK 10
 
-/*Roles*/
-#define CLIENT 0
-#define SERVER 1
-
 /*Message Types*/
 mtype = {SYN, FIN, ACK, DATA};
 
 /*timestamps*/
 int seq_A = 0;
-int ack_A = 0;
 int seq_B = 0;
+
+int ack_A = 0;
 int ack_B = 0;
 
 /*Channels*/
-chan hostA_internet = [2] of {mtype, int};
-chan hostB_internet = [2] of {mtype, int};
+//chan hostA_internet = [2] of {mtype, int};
+//chan hostB_internet = [2] of {mtype, int};
+chan channel = [2] of {mtype,int};
 
 /*States of Processes*/
 byte hostA_state = CLOSED;
 byte hostB_state = CLOSED;
 
-/*Role of Processes*/
-byte hostA_role;
-byte hostB_role;
-
 /*Storage for received messages*/
-int hostA_msg;
-int hostB_msg;
+int rcv_A;
+int rcv_B;
 int internet_msg;
 
 
@@ -48,93 +42,38 @@ int Timer_A = 0;
 proctype HostA()
 {
 	byte hostA_state = CLOSED;
-	hostA_msg =0;
-	hostA_role = CLIENT;
+	hostA_msg = 0;
 	do
 	::
 		if
 		::(hostA_state == CLOSED)->
-			if
-			:: (hostA_role == CLIENT) ->
-				atomic
-				{
-					hostA_internet!SYN,seq;
-					hostA_state = SYN_SENT;
-					seq++;
-				}
-			:: (hostA_role == SERVER) ->
-				hostA_state = LISTEN;
-			fi;
+			atomic
+			{
+				channel!SYN,seq;
+				hostA_state = SYN_SENT;
+				seq++;
+			}
 		::(hostA_state == LISTEN)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
-				hostA_internet?SYN,seq_A
-			fi;
+			//only server		
 		::(hostA_state == SYN_RCVD)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
-			
-			fi;
+			//only server 
 		::(hostA_state == SYN_SENT)->
+			channel?ACK,rcv_A;
 			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
-			
-			fi;
 		::(hostA_state == ESTABLISHED_CONNECTION)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
-			
-			fi;
+	
 		::(hostA_state == FIN_WAIT_1)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
-			
-			fi;
+		
 		::(hostA_state == FIN_WAIT_2)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
 			
-			fi;
 		::(hostA_state == TIMED_WAIT)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
 			
-			fi;
 		::(hostA_state == CLOSING)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
 			
-			fi;
 		::(hostA_state == CLOSE_WAIT)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
 			
-			fi;
 		::(hostA_state == LAST_ACK)->
-			if
-			:: (hostA_role == CLIENT) ->
-				
-			:: (hostA_role == SERVER) ->
 			
-			fi;
 		fi;
 	od;
 
@@ -168,82 +107,34 @@ proctype HostB()
 	::
 		if
 		::(hostB_state == CLOSED)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
-			
-			fi;
+			hostA_state = LISTEN;
 		::(hostB_state == LISTEN)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
-			
-			fi;
+			atomic
+			{
+				channel?SYN,rcv_B;
+				ack_B = rcv_B+1;//dont check value of ack because its the first ack sent
+				channel!ACK,ack_B;//sent ack back first 
+				channel!SYN,seq_B;//then send syn
+				hostB_state = SYN_RCVD;
+			}
 		::(hostB_state == SYN_RCVD)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == SYN_SENT)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == ESTABLISHED_CONNECTION)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == FIN_WAIT_1)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == FIN_WAIT_2)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == TIMED_WAIT)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == CLOSING)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == CLOSE_WAIT)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		::(hostB_state == LAST_ACK)->
-			if
-			:: (hostB_role == CLIENT) ->
-				
-			:: (hostB_role == SERVER) ->
 			
-			fi;
 		fi;
 	od;
 	
