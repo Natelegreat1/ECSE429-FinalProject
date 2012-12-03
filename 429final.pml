@@ -16,7 +16,11 @@
 #define SERVER 1
 
 /*Message Types*/
-mtype = {Seq, Ack, Establishing, Established}
+mtype = {SYN, FIN, ACK, DATA};
+
+/*timestamps*/
+int seq = 0;
+int ack = 0;
 
 /*Channels*/
 chan hostA_internet = [1] of {mtype, int};
@@ -36,9 +40,8 @@ int hostB_msg;
 int internet_msg;
 
 
+/*Used to implement time out*/
 int Timer_A = 0;
-int x = 0;
-int y = 0;
 
 proctype HostA()
 {
