@@ -49,16 +49,82 @@ proctype HostA()
 	::
 		if
 		::(hostA_state == CLOSED)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == LISTEN)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == SYN_RCVD)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == SYN_SENT)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == ESTABLISHED_CONNECTION)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == FIN_WAIT_1)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == FIN_WAIT_2)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == TIMED_WAIT)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == CLOSING)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == CLOSE_WAIT)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		::(hostA_state == LAST_ACK)->
+			if
+			:: (hostA_role == CLIENT) ->
+				
+			:: (hostA_role == SERVER) ->
+			
+			fi;
 		fi;
 	od;
 
@@ -92,16 +158,82 @@ proctype HostB()
 	::
 		if
 		::(hostB_state == CLOSED)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == LISTEN)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == SYN_RCVD)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == SYN_SENT)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == ESTABLISHED_CONNECTION)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == FIN_WAIT_1)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == FIN_WAIT_2)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == TIMED_WAIT)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == CLOSING)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == CLOSE_WAIT)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		::(hostB_state == LAST_ACK)->
+			if
+			:: (hostB_role == CLIENT) ->
+				
+			:: (hostB_role == SERVER) ->
+			
+			fi;
 		fi;
 	od;
 	
@@ -131,5 +263,6 @@ init
 {
 	run HostA();
 	run HostB();
+	proctype Internet();
 
 }
