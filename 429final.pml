@@ -39,7 +39,7 @@ int internet_msg;
 /*Used to implement time out*/
 int Timer_A = 0;
 
-proctype HostA()
+proctype HostA() //ROLE = CLIENT
 {
 	byte hostA_state = CLOSED;
 	hostA_msg = 0;
@@ -63,8 +63,17 @@ proctype HostA()
 		::(hostA_state == ESTABLISHED_CONNECTION)->
 	
 		::(hostA_state == FIN_WAIT_1)->
-		
+			ack_A++;
+			seq_A++;
+			channel!ACK, ack_A;
+			channel!FIN, seq_A;
+			hostA_state = FIN_WAIT_2;				
+				
 		::(hostA_state == FIN_WAIT_2)->
+				channel?ACK, ack_A;
+				channel?FIN, seq_A;
+				ack_A++;
+				channel!ACK, ack_A;
 			
 		::(hostA_state == TIMED_WAIT)->
 			
@@ -76,32 +85,13 @@ proctype HostA()
 			
 		fi;
 	od;
-
-	
-	
-	SEVER_STATE!Establishing;
-	
-	x++;
-	SYN!Seq, x;
-	SYN?Seq, y;
-	SYN?Ack, x;
-	SYN!Seq, x++;
-	SYN!Ack, y++;
-	
-	SERVER_STATE?state;
-	
-	if
-	:: (state == Established) ->
-	
-	fi;
 	
 }
 
-proctype HostB()
+proctype HostB() //ROLE = SERVER
 {
 	byte hostB_state = CLOSED;
 	hostB_msg = 0;
-	hostB_role = SERVER;
 	
 	do
 	::
@@ -132,21 +122,20 @@ proctype HostB()
 		::(hostB_state == CLOSING)->
 			
 		::(hostB_state == CLOSE_WAIT)->
-			
+				channel?ACK, ack_B;
+				channel?FIN, seq_B;
+				ack_B++;
+				seq_B++;
+				channel!ACK, ack_B;
+				channel!FIN, seq_A;
+				
+				hostB_state = LAST_ACK;
 		::(hostB_state == LAST_ACK)->
-			
+				channel?ACK, ack_B;
+				
+				hostB_state = CLOSED;
 		fi;
 	od;
-	
-	
-	
-	SYN?Seq, x ;
-	SYN!Seq, y;
-	SYN!Ack, x++;
-	SYN?Seq, x;
-	SYN?Ack, y;
-	
-	SEVER_STATE!Established;
 	
 	
 }
