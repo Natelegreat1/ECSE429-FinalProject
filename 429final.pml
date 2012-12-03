@@ -48,7 +48,7 @@ int Timer_A = 0;
 proctype HostA()
 {
 	byte hostA_state = CLOSED;
-	hostA_msg =0;
+	hostA_msg = 0;
 	hostA_role = CLIENT;
 	do
 	::
@@ -96,7 +96,10 @@ proctype HostA()
 		::(hostA_state == FIN_WAIT_1)->
 			if
 			:: (hostA_role == CLIENT) ->
-				
+				hostA_internet!ACK, ack;
+				hostA_internet!SEQ, seq;
+
+				hostA_state
 			:: (hostA_role == SERVER) ->
 			
 			fi;
@@ -105,7 +108,7 @@ proctype HostA()
 			:: (hostA_role == CLIENT) ->
 				
 			:: (hostA_role == SERVER) ->
-			
+				
 			fi;
 		::(hostA_state == TIMED_WAIT)->
 			if
@@ -131,30 +134,12 @@ proctype HostA()
 		::(hostA_state == LAST_ACK)->
 			if
 			:: (hostA_role == CLIENT) ->
-				
 			:: (hostA_role == SERVER) ->
-			
+				hostA_state = CLOSED;
+
 			fi;
 		fi;
 	od;
-
-	
-	
-	SEVER_STATE!Establishing;
-	
-	x++;
-	SYN!Seq, x;
-	SYN?Seq, y;
-	SYN?Ack, x;
-	SYN!Seq, x++;
-	SYN!Ack, y++;
-	
-	SERVER_STATE?state;
-	
-	if
-	:: (state == Established) ->
-	
-	fi;
 	
 }
 
@@ -246,16 +231,6 @@ proctype HostB()
 			fi;
 		fi;
 	od;
-	
-	
-	
-	SYN?Seq, x ;
-	SYN!Seq, y;
-	SYN!Ack, x++;
-	SYN?Seq, x;
-	SYN?Ack, y;
-	
-	SEVER_STATE!Established;
 	
 	
 }
