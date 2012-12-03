@@ -19,12 +19,14 @@
 mtype = {SYN, FIN, ACK, DATA};
 
 /*timestamps*/
-int seq = 0;
-int ack = 0;
+int seq_A = 0;
+int ack_A = 0;
+int seq_B = 0;
+int ack_B = 0;
 
 /*Channels*/
-chan hostA_internet = [1] of {mtype, int};
-chan hostB_internet = [1] of {mtype, int};
+chan hostA_internet = [2] of {mtype, int};
+chan hostB_internet = [2] of {mtype, int};
 
 /*States of Processes*/
 byte hostA_state = CLOSED;
@@ -54,16 +56,21 @@ proctype HostA()
 		::(hostA_state == CLOSED)->
 			if
 			:: (hostA_role == CLIENT) ->
-				
+				atomic
+				{
+					hostA_internet!SYN,seq;
+					hostA_state = SYN_SENT;
+					seq++;
+				}
 			:: (hostA_role == SERVER) ->
-			
+				hostA_state = LISTEN;
 			fi;
 		::(hostA_state == LISTEN)->
 			if
 			:: (hostA_role == CLIENT) ->
 				
 			:: (hostA_role == SERVER) ->
-			
+				hostA_internet?SYN,seq_A
 			fi;
 		::(hostA_state == SYN_RCVD)->
 			if
