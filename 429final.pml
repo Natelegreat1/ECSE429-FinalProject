@@ -107,7 +107,7 @@ proctype HostB()
 	
 	
 	
-	SYN?Seq, x;
+	SYN?Seq, x ;
 	SYN!Seq, y;
 	SYN!Ack, x++;
 	SYN?Seq, x;
