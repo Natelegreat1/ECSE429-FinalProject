@@ -106,7 +106,7 @@ proctype HostB() //ROLE = SERVER
 			hostA_state = LISTEN;
 
 		::(hostB_state == LISTEN)->
-			hostA_internet?SYN,seq_A
+			hostA_internet?SYN, seq_A;
 
 		::(hostB_state == SYN_RCVD)->
 			
