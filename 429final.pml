@@ -49,17 +49,25 @@ proctype HostA() //ROLE = CLIENT
 		::(hostA_state == CLOSED)->
 			atomic
 			{
-				channel!SYN,seq;
+				channel!SYN,seq_A;
 				hostA_state = SYN_SENT;
-				seq++;
+				seq_A++;
 			}
 		::(hostA_state == LISTEN)->
 			//only server		
 		::(hostA_state == SYN_RCVD)->
 			//only server 
 		::(hostA_state == SYN_SENT)->
-			channel?ACK,rcv_A;
-			if
+			atomic
+			{
+				channel?ACK,rcv_A;
+				seq_A = rcv_A;//check if rcv = seq later
+				channel?SYN,rcv_A;
+				ack_A = rcv_A +1;//dont do a check on the first seq from B received
+				channel!ACK,ack_A;
+				channel!SYN,seq_A;
+				hostA_state = ESTABLISHED_CONNECTION;
+			}
 		::(hostA_state == ESTABLISHED_CONNECTION)->
 	
 		::(hostA_state == FIN_WAIT_1)->
@@ -108,7 +116,14 @@ proctype HostB() //ROLE = SERVER
 				hostB_state = SYN_RCVD;
 			}
 		::(hostB_state == SYN_RCVD)->
-			
+			atomic
+			{
+				channel?ACK,rcv_B;
+				seq_B = rcv_B;
+				channel?SYN,rcv_B;
+				ack_B = rcv_B + 1;
+				hostB_state = SYN_RCVD;
+			}
 		::(hostB_state == SYN_SENT)->
 			
 		::(hostB_state == ESTABLISHED_CONNECTION)->
