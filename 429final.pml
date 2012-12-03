@@ -6,7 +6,7 @@
 #define ESTABLISHED_CONNECTION 4
 #define FIN_WAIT_1 5
 #define FIN_WAIT_2 6
-#define TIMED_WAIT 7
+#define TIME_WAIT 7
 #define CLOSING 8
 #define CLOSE_WAIT 9
 #define LAST_ACK 10
@@ -71,30 +71,37 @@ proctype HostA() //ROLE = CLIENT
 		::(hostA_state == ESTABLISHED_CONNECTION)->
 	
 		::(hostA_state == FIN_WAIT_1)->
-			ack_A++;
-			seq_A++;
-			channel!ACK, ack_A;
-			channel!FIN, seq_A;
-			hostA_state = FIN_WAIT_2;				
-				
+			atomic
+			{
+				ack_A++;
+				seq_A++;
+				channel!ACK, ack_A;
+				channel!FIN, seq_A;
+			}
+			hostA_state = FIN_WAIT_2;					
 		::(hostA_state == FIN_WAIT_2)->
+			atomic
+			{
 				channel?ACK, ack_A;
 				channel?FIN, seq_A;
 				ack_A++;
 				channel!ACK, ack_A;
-			
-		::(hostA_state == TIMED_WAIT)->
-			
+			}
+			hostA_state = TIME_WAIT;
+		::(hostA_state == TIME_WAIT)->
+				if
+				:: goto TIMEOUT;
+				:: //stay put
+				fi;
 		::(hostA_state == CLOSING)->
-			
-		::(hostA_state == CLOSE_WAIT)->
-			
-		::(hostA_state == LAST_ACK)->
+			//if CLOSE comes from ESTABLISHED_CONNECTION
 			
 		fi;
 	od;
 	
-}
+	TIMEOUT:
+	printf ("DONE");
+	}
 
 proctype HostB() //ROLE = SERVER
 {
@@ -128,27 +135,23 @@ proctype HostB() //ROLE = SERVER
 			
 		::(hostB_state == ESTABLISHED_CONNECTION)->
 			
-		::(hostB_state == FIN_WAIT_1)->
-			
-		::(hostB_state == FIN_WAIT_2)->
-			
-		::(hostB_state == TIMED_WAIT)->
-			
-		::(hostB_state == CLOSING)->
 			
 		::(hostB_state == CLOSE_WAIT)->
+			atomic
+			{
 				channel?ACK, ack_B;
 				channel?FIN, seq_B;
 				ack_B++;
 				seq_B++;
 				channel!ACK, ack_B;
 				channel!FIN, seq_A;
-				
-				hostB_state = LAST_ACK;
+			}
+			hostB_state = LAST_ACK;
+		
 		::(hostB_state == LAST_ACK)->
-				channel?ACK, ack_B;
-				
-				hostB_state = CLOSED;
+			channel?ACK, ack_B;
+			
+			hostB_state = CLOSED;
 		fi;
 	od;
 	
@@ -171,3 +174,8 @@ init
 	proctype Internet();
 
 }
+
+
+//control flow graph
+//edge coverage
+//node coverage
