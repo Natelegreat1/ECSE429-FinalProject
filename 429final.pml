@@ -62,18 +62,23 @@ proctype HostA() //ROLE = CLIENT
 		::(hostA_state == ESTABLISHED_CONNECTION)->
 			
 		::(hostA_state == FIN_WAIT_1)->
-			ack_A++;
-			seq_A++;
-			channel!ACK, ack_A;
-			channel!FIN, seq_A;
-			hostA_state = FIN_WAIT_2;				
-				
+			atomic
+			{
+				ack_A++;
+				seq_A++;
+				channel!ACK, ack_A;
+				channel!FIN, seq_A;
+			}
+			hostA_state = FIN_WAIT_2;					
 		::(hostA_state == FIN_WAIT_2)->
+			atomic
+			{
 				channel?ACK, ack_A;
 				channel?FIN, seq_A;
 				ack_A++;
 				channel!ACK, ack_A;
-				hostA_state = TIME_WAIT;
+			}
+			hostA_state = TIME_WAIT;
 		::(hostA_state == TIME_WAIT)->
 				if
 				:: goto TIMEOUT;
@@ -111,19 +116,21 @@ proctype HostB() //ROLE = SERVER
 			
 			
 		::(hostB_state == CLOSE_WAIT)->
+			atomic
+			{
 				channel?ACK, ack_B;
 				channel?FIN, seq_B;
 				ack_B++;
 				seq_B++;
 				channel!ACK, ack_B;
 				channel!FIN, seq_A;
-				
-				hostB_state = LAST_ACK;
+			}
+			hostB_state = LAST_ACK;
 		
 		::(hostB_state == LAST_ACK)->
-				channel?ACK, ack_B;
-				
-				hostB_state = CLOSED;
+			channel?ACK, ack_B;
+			
+			hostB_state = CLOSED;
 		fi;
 	od;
 	
@@ -146,3 +153,8 @@ init
 	proctype Internet();
 
 }
+
+
+//control flow graph
+//edge coverage
+//node coverage
