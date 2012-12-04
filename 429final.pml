@@ -34,13 +34,13 @@ byte hostB_state = CLOSED;
 /*Storage for received messages*/
 int rcv_A;
 int rcv_B;
+int rcv_type_B;
 int internet_msg;
-
 
 /*Used to implement time out*/
 int Timer_A = 0;
 
-proctype HostA() //ROLE = CLIENT
+proctype HostA()
 {
 	hostA_state = CLOSED;
 	rcv_A = 0;
@@ -62,20 +62,29 @@ proctype HostA() //ROLE = CLIENT
 				B_to_A?SYN,rcv_A;
 				ack_A = rcv_A +1;//dont do a check on the first seq from B received
 				A_to_B!ACK,ack_A;
-				A_to_B!SYN,seq_A;
 				hostA_state = ESTABLISHED_CONNECTION;
 			}
-		::(hostA_state == ESTABLISHED_CONNECTION)->
-			atomic
-			{
-				//close
-				A_to_B!FIN,seq_A;
-				hostA_state = FIN_WAIT_1;
-			}
+		::(hostA_state == ESTABLISHED_CONNECTION)->		
+			if
+			::
+				atomic
+				{
+					//send data
+					A_to_B!DATA,seq_A;
+					B_to_A?ACK,ack_A;
+				}
+			::
+				atomic
+				{
+					//close
+					A_to_B!FIN,seq_A;
+					hostA_state = FIN_WAIT_1;
+				}
+			fi;
 		::(hostA_state == FIN_WAIT_1)->
 			atomic
 			{
-				B_to_A?ACK,ack_A;
+				B_to_A?ACK,ack_A;//////
 				hostA_state = FIN_WAIT_2;	
 			}				
 		::(hostA_state == FIN_WAIT_2)->
@@ -89,7 +98,7 @@ proctype HostA() //ROLE = CLIENT
 		::(hostA_state == TIME_WAIT)->
 			atomic
 			{
-				B_to_A?ACK,ack_A;
+				//timeout
 				hostA_state = CLOSED;
 				break;//to finish process
 			}
@@ -98,7 +107,7 @@ proctype HostA() //ROLE = CLIENT
 		fi;
 	od;
 }
-proctype HostB() //ROLE = SERVER
+proctype HostB()
 {
 	hostB_state = CLOSED;
 	rcv_B = 0;
@@ -117,24 +126,27 @@ proctype HostB() //ROLE = SERVER
 				B_to_A!SYN,seq_B;//then send syn
 				hostB_state = SYN_RCVD;
 			}
-		::(hostB_state == SYN_RCVD)->
+		::(hostB_state == SYN_RCVD)->		
 			atomic
 			{
 				A_to_B?ACK,rcv_B;
 				seq_B = rcv_B;
-				A_to_B?SYN,rcv_B;
-				ack_B = rcv_B + 1;
 				hostB_state = ESTABLISHED_CONNECTION;
 			}
 		::(hostB_state == ESTABLISHED_CONNECTION)->
+				A_to_B?rcv_type_B,seq_B;
 			atomic
 			{
-				A_to_B?FIN,seq_B;
-				ack_B = seq_B +1;
+				ack_B = seq_B+1;
 				B_to_A!ACK,ack_B;
-				hostB_state = CLOSE_WAIT;
+				if
+				::(rcv_type_B == FIN)->
+					hostB_state = CLOSE_WAIT;
+				:: else->
+					skip;
+				fi;			
 			}
-		::(hostB_state == CLOSE_WAIT)->
+			::(hostB_state == CLOSE_WAIT)->
 			atomic
 			{
 				//close
