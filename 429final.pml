@@ -69,6 +69,7 @@ proctype HostA()
 				hostA_state = ESTABLISHED_CONNECTION;
 			}
 		::(hostA_state == ESTABLISHED_CONNECTION)->		
+			received = false;
 			if
 			::			
 				//send data
@@ -87,10 +88,12 @@ proctype HostA()
 						fi;
 						time++;	
 					}
+				::else->
+					break;
 				od;
 				atomic
 				{
-					printf("Received?\n");
+					printf("Received!\n");
 					B_to_A?ACK,rcv_A;
 					seq_A = rcv_A;
 					time = 0;
