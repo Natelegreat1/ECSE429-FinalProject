@@ -35,10 +35,13 @@ byte hostB_state = CLOSED;
 int rcv_A;
 int rcv_B;
 int rcv_type_B;
-int internet_msg;
+//int internet_msg;
 
-/*Used to implement time out*/
-int Timer_A = 0;
+
+/*Used to implement retransmission*/
+int TIMEOUT = 5;
+bool received = false;
+int time = 0;
 
 proctype HostA()
 {
@@ -67,15 +70,30 @@ proctype HostA()
 			}
 		::(hostA_state == ESTABLISHED_CONNECTION)->		
 			if
-			::
+			::			
+				//send data
+				do
+				::(received == false)->
+					atomic
+					{
+						if 
+						::(time % TIMEOUT == 0)->
+							
+								printf("seq: %d\n",seq_A);
+								A_to_B!DATA,seq_A;
+								printf("Send!\n");
+						::else->
+							printf("Hello?\n");
+						fi;
+						time++;	
+					}
+				od;
 				atomic
 				{
-					//send data
-					printf("seq: %d\n",seq_A);
-					A_to_B!DATA,seq_A;
-					seq_A++;
+					printf("Received?\n");
 					B_to_A?ACK,rcv_A;
 					seq_A = rcv_A;
+					time = 0;
 				}
 			::
 				atomic
@@ -142,7 +160,8 @@ proctype HostB()
 				hostB_state = ESTABLISHED_CONNECTION;
 			}
 		::(hostB_state == ESTABLISHED_CONNECTION)->
-				A_to_B?rcv_type_B,rcv_B;
+			A_to_B?rcv_type_B,rcv_B;
+			received = true;
 			atomic
 			{
 				ack_B = rcv_B+1;
@@ -155,14 +174,14 @@ proctype HostB()
 					skip;
 				fi;			
 			}
-			::(hostB_state == CLOSE_WAIT)->
-			atomic
-			{
-				//close
-				printf("seq: %d\n",seq_B);
-				B_to_A!FIN, seq_B;
-				hostB_state = LAST_ACK;
-			}
+		::(hostB_state == CLOSE_WAIT)->
+		atomic
+		{
+			//close
+			printf("seq: %d\n",seq_B);
+			B_to_A!FIN, seq_B;
+			hostB_state = LAST_ACK;
+		}
 		::(hostB_state == LAST_ACK)->
 			atomic
 			{
