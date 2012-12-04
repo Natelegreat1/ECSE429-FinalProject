@@ -24,7 +24,8 @@ int ack_B = 0;
 /*Channels*/
 //chan hostA_internet = [2] of {mtype, int};
 //chan hostB_internet = [2] of {mtype, int};
-chan channel = [2] of {mtype,int};
+chan A_to_B = [2] of {mtype,int};
+chan B_to_A = [2] of {mtype,int};
 
 /*States of Processes*/
 byte hostA_state = CLOSED;
@@ -41,138 +42,126 @@ int Timer_A = 0;
 
 proctype HostA() //ROLE = CLIENT
 {
-	byte hostA_state = CLOSED;
-	hostA_msg = 0;
+	hostA_state = CLOSED;
+	rcv_A = 0;
 	do
 	::
 		if
 		::(hostA_state == CLOSED)->
 			atomic
 			{
-				channel!SYN,seq_A;
+				A_to_B!SYN,seq_A;
 				hostA_state = SYN_SENT;
 				seq_A++;
 			}
-		::(hostA_state == LISTEN)->
-			//only server		
-		::(hostA_state == SYN_RCVD)->
-			//only server 
 		::(hostA_state == SYN_SENT)->
 			atomic
 			{
-				channel?ACK,rcv_A;
+				B_to_A?ACK,rcv_A;
 				seq_A = rcv_A;//check if rcv = seq later
-				channel?SYN,rcv_A;
+				B_to_A?SYN,rcv_A;
 				ack_A = rcv_A +1;//dont do a check on the first seq from B received
-				channel!ACK,ack_A;
-				channel!SYN,seq_A;
+				A_to_B!ACK,ack_A;
+				A_to_B!SYN,seq_A;
 				hostA_state = ESTABLISHED_CONNECTION;
 			}
 		::(hostA_state == ESTABLISHED_CONNECTION)->
-	
+			atomic
+			{
+				//close
+				A_to_B!FIN,seq_A;
+				hostA_state = FIN_WAIT_1;
+			}
 		::(hostA_state == FIN_WAIT_1)->
 			atomic
 			{
-				ack_A++;
-				seq_A++;
-				channel!ACK, ack_A;
-				channel!FIN, seq_A;
-			}
-			hostA_state = FIN_WAIT_2;					
+				B_to_A?ACK,ack_A;
+				hostA_state = FIN_WAIT_2;	
+			}				
 		::(hostA_state == FIN_WAIT_2)->
 			atomic
 			{
-				channel?ACK, ack_A;
-				channel?FIN, seq_A;
-				ack_A++;
-				channel!ACK, ack_A;
+				B_to_A?FIN,seq_A;
+				ack_A = seq_A+1;
+				A_to_B!ACK, ack_A;
+				hostA_state = TIME_WAIT;
 			}
-			hostA_state = TIME_WAIT;
 		::(hostA_state == TIME_WAIT)->
-				if
-				:: goto TIMEOUT;
-				:: //stay put
-				fi;
+			atomic
+			{
+				B_to_A?ACK,ack_A;
+				hostA_state = CLOSED;
+				break;//to finish process
+			}
 		::(hostA_state == CLOSING)->
-			//if CLOSE comes from ESTABLISHED_CONNECTION
-			
+			skip;//if CLOSE comes from ESTABLISHED_CONNECTION
 		fi;
 	od;
-	
-	TIMEOUT:
-	printf ("DONE");
-	}
-
+}
 proctype HostB() //ROLE = SERVER
 {
-	byte hostB_state = CLOSED;
-	hostB_msg = 0;
+	hostB_state = CLOSED;
+	rcv_B = 0;
 	
 	do
 	::
 		if
 		::(hostB_state == CLOSED)->
-			hostA_state = LISTEN;
+			hostB_state = LISTEN;
 		::(hostB_state == LISTEN)->
 			atomic
 			{
-				channel?SYN,rcv_B;
+				A_to_B?SYN,rcv_B;
 				ack_B = rcv_B+1;//dont check value of ack because its the first ack sent
-				channel!ACK,ack_B;//sent ack back first 
-				channel!SYN,seq_B;//then send syn
+				B_to_A!ACK,ack_B;//sent ack back first 
+				B_to_A!SYN,seq_B;//then send syn
 				hostB_state = SYN_RCVD;
 			}
 		::(hostB_state == SYN_RCVD)->
 			atomic
 			{
-				channel?ACK,rcv_B;
+				A_to_B?ACK,rcv_B;
 				seq_B = rcv_B;
-				channel?SYN,rcv_B;
+				A_to_B?SYN,rcv_B;
 				ack_B = rcv_B + 1;
-				hostB_state = SYN_RCVD;
+				hostB_state = ESTABLISHED_CONNECTION;
 			}
-		::(hostB_state == SYN_SENT)->
-			
 		::(hostB_state == ESTABLISHED_CONNECTION)->
-			
-			
+			atomic
+			{
+				A_to_B?FIN,seq_B;
+				ack_B = seq_B +1;
+				B_to_A!ACK,ack_B;
+				hostB_state = CLOSE_WAIT;
+			}
 		::(hostB_state == CLOSE_WAIT)->
 			atomic
 			{
-				channel?ACK, ack_B;
-				channel?FIN, seq_B;
-				ack_B++;
-				seq_B++;
-				channel!ACK, ack_B;
-				channel!FIN, seq_A;
+				//close
+				B_to_A!FIN, seq_A;
+				hostB_state = LAST_ACK;
 			}
-			hostB_state = LAST_ACK;
-		
 		::(hostB_state == LAST_ACK)->
-			channel?ACK, ack_B;
-			
-			hostB_state = CLOSED;
+			atomic
+			{
+				A_to_B?ACK, ack_B;
+				hostB_state = CLOSED;
+				break;//to finish process
+			}
 		fi;
 	od;
-	
-	
 }
 
-proctype Internet()
-{
-
-
-
-
-}
+//proctype Internet()
+//{
+//}
 
 
 init
 {
 	run HostA();
 	run HostB();
-	proctype Internet();
-
+	//proctype Internet();
 }
 
 
