@@ -16,10 +16,10 @@ mtype = {SYN, FIN, ACK, DATA};
 
 /*timestamps*/
 int seq_A = 0;
-int seq_B = 0;
+int seq_B = 100;
 
-int ack_A = 0;
-int ack_B = 0;
+int ack_A;
+int ack_B;
 
 /*Channels*/
 //chan hostA_internet = [2] of {mtype, int};
@@ -50,9 +50,9 @@ proctype HostA()
 		::(hostA_state == CLOSED)->
 			atomic
 			{
+				printf("seq: %d\n",seq_A);
 				A_to_B!SYN,seq_A;
 				hostA_state = SYN_SENT;
-				seq_A++;
 			}
 		::(hostA_state == SYN_SENT)->
 			atomic
@@ -61,6 +61,7 @@ proctype HostA()
 				seq_A = rcv_A;//check if rcv = seq later
 				B_to_A?SYN,rcv_A;
 				ack_A = rcv_A +1;//dont do a check on the first seq from B received
+				printf("ack: %d\n",ack_A);
 				A_to_B!ACK,ack_A;
 				hostA_state = ESTABLISHED_CONNECTION;
 			}
@@ -70,13 +71,17 @@ proctype HostA()
 				atomic
 				{
 					//send data
+					printf("seq: %d\n",seq_A);
 					A_to_B!DATA,seq_A;
-					B_to_A?ACK,ack_A;
+					seq_A++;
+					B_to_A?ACK,rcv_A;
+					seq_A = rcv_A;
 				}
 			::
 				atomic
 				{
 					//close
+					printf("seq: %d\n",seq_A);
 					A_to_B!FIN,seq_A;
 					hostA_state = FIN_WAIT_1;
 				}
@@ -84,14 +89,15 @@ proctype HostA()
 		::(hostA_state == FIN_WAIT_1)->
 			atomic
 			{
-				B_to_A?ACK,ack_A;//////
+				B_to_A?ACK,ack_A;
 				hostA_state = FIN_WAIT_2;	
 			}				
 		::(hostA_state == FIN_WAIT_2)->
 			atomic
 			{
-				B_to_A?FIN,seq_A;
-				ack_A = seq_A+1;
+				B_to_A?FIN,rcv_A;
+				ack_A = rcv_A+1;
+				printf("ack: %d\n",ack_A);
 				A_to_B!ACK, ack_A;
 				hostA_state = TIME_WAIT;
 			}
@@ -122,8 +128,10 @@ proctype HostB()
 			{
 				A_to_B?SYN,rcv_B;
 				ack_B = rcv_B+1;//dont check value of ack because its the first ack sent
+				printf("ack: %d\n",ack_B);
+				printf("seq: %d\n",seq_B);
 				B_to_A!ACK,ack_B;//sent ack back first 
-				B_to_A!SYN,seq_B;//then send syn
+				B_to_A!SYN,seq_B;//then send seq B for first time
 				hostB_state = SYN_RCVD;
 			}
 		::(hostB_state == SYN_RCVD)->		
@@ -134,10 +142,11 @@ proctype HostB()
 				hostB_state = ESTABLISHED_CONNECTION;
 			}
 		::(hostB_state == ESTABLISHED_CONNECTION)->
-				A_to_B?rcv_type_B,seq_B;
+				A_to_B?rcv_type_B,rcv_B;
 			atomic
 			{
-				ack_B = seq_B+1;
+				ack_B = rcv_B+1;
+				printf("ack: %d\n",ack_B);
 				B_to_A!ACK,ack_B;
 				if
 				::(rcv_type_B == FIN)->
@@ -150,13 +159,15 @@ proctype HostB()
 			atomic
 			{
 				//close
-				B_to_A!FIN, seq_A;
+				printf("seq: %d\n",seq_B);
+				B_to_A!FIN, seq_B;
 				hostB_state = LAST_ACK;
 			}
 		::(hostB_state == LAST_ACK)->
 			atomic
 			{
-				A_to_B?ACK, ack_B;
+				A_to_B?ACK, rcv_B;
+				seq_B = rcv_B;
 				hostB_state = CLOSED;
 				break;//to finish process
 			}
