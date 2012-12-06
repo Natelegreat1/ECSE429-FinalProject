@@ -11,6 +11,25 @@
 #define CLOSE_WAIT 9
 #define LAST_ACK 10
 
+/*Macros for LTL assertions*/
+
+/*Host A FSM behaviour*/
+#define hostA_state==CLOSED 				AC
+#define hostA_state==SYN_SENT 				ASS
+#define hostA_state==ESTABLISHED_CONNECTION	AEC
+#define hostA_state==FIN_WAIT_1				AFW1
+#define hostA_state==FIN_WAIT_2				AFW2
+#define hostA_state == TIME_WAIT			ATW
+
+
+/*Host B FSM behaviour*/
+#define hostB_state==CLOSED 				BC
+#define hostB_state==LISTEN 				BL
+#define hostB_state==SYN_RCVD 				BSR
+#define hostB_state==ESTABLISHED_CONNECTION	BEC
+#define hostB_state==CLOSE_WAIT				BCW
+#define hostB_state==LAST_ACK				BLA
+
 /*Message Types*/
 mtype = {SYN, FIN, ACK, DATA};
 
