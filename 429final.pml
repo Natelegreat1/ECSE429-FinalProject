@@ -1,34 +1,34 @@
 /*States*/
-#define CLOSED 0
-#define LISTEN 1
-#define SYN_RCVD 2
-#define SYN_SENT 3
-#define ESTABLISHED_CONNECTION 4
-#define FIN_WAIT_1 5
-#define FIN_WAIT_2 6
-#define TIME_WAIT 7
-#define CLOSING 8
-#define CLOSE_WAIT 9
-#define LAST_ACK 10
+#define CLOSED 					0
+#define LISTEN 					1
+#define SYN_RCVD 				2
+#define SYN_SENT 				3
+#define ESTABLISHED_CONNECTION 	4
+#define FIN_WAIT_1 				5
+#define FIN_WAIT_2 				6
+#define TIME_WAIT 				7
+#define CLOSING 				8
+#define CLOSE_WAIT 				9
+#define LAST_ACK 				10
 
 /*Macros for LTL assertions*/
 
 /*Host A FSM behaviour*/
-#define hostA_state==CLOSED 				AC
-#define hostA_state==SYN_SENT 				ASS
-#define hostA_state==ESTABLISHED_CONNECTION	AEC
-#define hostA_state==FIN_WAIT_1				AFW1
-#define hostA_state==FIN_WAIT_2				AFW2
-#define hostA_state==TIME_WAIT				ATW
+#define AC 		hostA_state==CLOSED 
+#define ASS 	hostA_state==SYN_SENT 
+#define AEC 	hostA_state==ESTABLISHED_CONNECTION
+#define AFW1 	hostA_state==FIN_WAIT_1	
+#define AFW2 	hostA_state==FIN_WAIT_2
+#define ATW 	hostA_state==TIME_WAIT
 
 
 /*Host B FSM behaviour*/
-#define hostB_state==CLOSED 				BC
-#define hostB_state==LISTEN 				BL
-#define hostB4_state==SYN_RCVD 				BSR
-#define hostB_state==ESTABLISHED_CONNECTION	BEC
-#define hostB_state==CLOSE_WAIT				BCW
-#define hostB_state==LAST_ACK				BLA
+#define BC 		hostB_state==CLOSED 		
+#define BL 		hostB_state==LISTEN 
+#define BSR 	hostB4_state==SYN_RCVD 
+#define BEC 	hostB_state==ESTABLISHED_CONNECTION
+#define BCW 	hostB_state==CLOSE_WAIT	
+#define BLA 	hostB_state==LAST_ACK	
 
 /*Message Types*/
 mtype = {SYN, FIN, ACK, DATA};
@@ -47,9 +47,9 @@ chan B_to_A = [2] of {mtype,int};
 
 
 /*States of Processes*/
-byte hostA_state = CLOSED;
-byte hostB_state = CLOSED;
-byte internet_state = CLOSED;
+byte hostA_state = 		CLOSED;
+byte hostB_state = 		CLOSED;
+byte internet_state = 	CLOSED;
 
 /*Storage for received messages*/
 
