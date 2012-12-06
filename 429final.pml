@@ -67,7 +67,7 @@ int rcv_type_I;
 /*Used to implement retransmission*/
 int TIMEOUT = 5;
 bool received = false;
-int time = 0;
+int timer;
 
 proctype HostA()
 {
@@ -99,19 +99,25 @@ proctype HostA()
 			if
 			::			
 				//send data
+				timer = 0;
 				do
 				::(received == false)->
 					atomic
 					{
 						if 
-						::(time % TIMEOUT == 0)->
+						::(timer % TIMEOUT == 0)->
 								printf("seq: %d\n",seq_A);
 								A_to_I!DATA,seq_A;
-								printf("Send!\n");
+								if
+								::(timer == 0)->
+									printf("Send!\n");
+								::else->
+									printf("Resend!\n");
+								fi;
 						::else->
 							printf("Hello?\n");
 						fi;
-						time++;	
+						timer++;	
 					}
 				::else->
 					break;
@@ -121,7 +127,6 @@ proctype HostA()
 					printf("you Received it didn't you!\n");
 					B_to_A?ACK,rcv_A;
 					seq_A = rcv_A;
-					time = 0;
 				}
 			::
 				atomic
