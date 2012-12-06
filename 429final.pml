@@ -41,21 +41,28 @@ int ack_A;
 int ack_B;
 
 /*Channels*/
-//chan hostA_internet = [2] of {mtype, int};
-//chan hostB_internet = [2] of {mtype, int};
-chan A_to_B = [2] of {mtype,int};
+chan A_to_I = [2] of {mtype,int};
+chan I_to_B = [2] of {mtype,int};
 chan B_to_A = [2] of {mtype,int};
+
 
 /*States of Processes*/
 byte hostA_state = CLOSED;
 byte hostB_state = CLOSED;
+byte internet_state = CLOSED;
 
 /*Storage for received messages*/
+
+/*HostA*/
 int rcv_A;
+
+/*HostB*/
 int rcv_B;
 int rcv_type_B;
-//int internet_msg;
 
+/*Internet*/
+int rcv_I;
+int rcv_type_I;
 
 /*Used to implement retransmission*/
 int TIMEOUT = 5;
@@ -73,7 +80,7 @@ proctype HostA()
 			atomic
 			{
 				printf("seq: %d\n",seq_A);
-				A_to_B!SYN,seq_A;
+				A_to_I!SYN,seq_A;
 				hostA_state = SYN_SENT; // hostA_state = ESTABLISHED_CONNECTION; //MUTATION_02
 			}
 		::(hostA_state == SYN_SENT)->
@@ -84,7 +91,7 @@ proctype HostA()
 				B_to_A?SYN,rcv_A;
 				ack_A = rcv_A +1;//dont do a check on the first seq from B received
 				printf("ack: %d\n",ack_A);
-				A_to_B!ACK,ack_A;
+				A_to_I!ACK,ack_A;
 				hostA_state = ESTABLISHED_CONNECTION; // hostA_state = CLOSING; //MUTATION_03
 			}
 		::(hostA_state == ESTABLISHED_CONNECTION)->		
@@ -99,7 +106,7 @@ proctype HostA()
 						if 
 						::(time % TIMEOUT == 0)->
 								printf("seq: %d\n",seq_A);
-								A_to_B!DATA,seq_A;
+								A_to_I!DATA,seq_A;
 								printf("Send!\n");
 						::else->
 							printf("Hello?\n");
@@ -111,7 +118,7 @@ proctype HostA()
 				od;
 				atomic
 				{
-					printf("Received!\n");
+					printf("you Received it didn't you!\n");
 					B_to_A?ACK,rcv_A;
 					seq_A = rcv_A;
 					time = 0;
@@ -121,7 +128,7 @@ proctype HostA()
 				{
 					//close
 					printf("seq: %d\n",seq_A);
-					A_to_B!FIN,seq_A;
+					A_to_I!FIN,seq_A;
 					hostA_state = FIN_WAIT_1; // hostA_state = CLOSED //MUTATION_04
 				}
 			fi;
@@ -137,7 +144,7 @@ proctype HostA()
 				B_to_A?FIN,rcv_A;
 				ack_A = rcv_A+1;
 				printf("ack: %d\n",ack_A);
-				A_to_B!ACK, ack_A;
+				A_to_I!ACK, ack_A;
 				hostA_state = TIME_WAIT; // hostA_state = CLOSING; //MUTATION_06
 			}
 		::(hostA_state == TIME_WAIT)->
@@ -165,7 +172,7 @@ proctype HostB()
 		::(hostB_state == LISTEN)->
 			atomic
 			{
-				A_to_B?SYN,rcv_B;
+				I_to_B?SYN,rcv_B;
 				ack_B = rcv_B+1;//dont check value of ack because its the first ack sent
 				printf("ack: %d\n",ack_B);
 				printf("seq: %d\n",seq_B);
@@ -176,12 +183,12 @@ proctype HostB()
 		::(hostB_state == SYN_RCVD)->		
 			atomic
 			{
-				A_to_B?ACK,rcv_B;
+				I_to_B?ACK,rcv_B;
 				seq_B = rcv_B;
 				hostB_state = ESTABLISHED_CONNECTION; // hostB_state = LAST_ACK; //MUTATION_11
 			}
 		::(hostB_state == ESTABLISHED_CONNECTION)->
-			A_to_B?rcv_type_B,rcv_B;
+			I_to_B?rcv_type_B,rcv_B;
 			received = true;
 			atomic
 			{
@@ -206,11 +213,46 @@ proctype HostB()
 		::(hostB_state == LAST_ACK)->
 			atomic
 			{
-				A_to_B?ACK, rcv_B;
+				I_to_B?ACK, rcv_B;
 				seq_B = rcv_B;
 				hostB_state = CLOSED; // hostB_state = ESTABLISHED_CONNECTION; //MUTATION_14
 				break;//to finish process
 			}
+		fi;
+	od;
+}
+
+proctype Internet()
+{
+	do
+	::
+		if
+		::(internet_state == CLOSED)->
+			internet_state = LISTEN;
+		::(internet_state == LISTEN)->
+			A_to_I?rcv_type_I,rcv_I;
+			if
+			::(rcv_type_I == DATA)->//if message is of type data
+				if
+				::
+					I_to_B!rcv_type_I,rcv_I;//transmit message to HostB
+				::
+					skip;//drop packet due to network congestion
+				fi;
+			::(rcv_type_I != DATA)->//if msg is not of type data
+				I_to_B!rcv_type_I,rcv_I;// always transmit message to  HostB
+				if
+				::(rcv_type_I == FIN)->
+					internet_state = CLOSING;
+				::else->skip;
+				fi;
+			fi;
+		::(internet_state == CLOSING)->
+			A_to_I?rcv_type_I,rcv_I;
+			assert(rcv_type_I==ACK);//IMM_01
+			I_to_B!rcv_type_I,rcv_I;
+			internet_state = CLOSED;
+			break;
 		fi;
 	od;
 }
@@ -220,6 +262,7 @@ proctype HostB()
 init
 {
 	run HostA();
+	run Internet();
 	run HostB();
 }
 
