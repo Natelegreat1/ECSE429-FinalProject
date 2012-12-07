@@ -257,7 +257,9 @@ proctype Internet()
 			fi;
 		::(internet_state == CLOSING)->
 			A_to_I?rcv_type_I,rcv_I;
-			assert(rcv_type_I==ACK);//IMM_01
+			assert(rcv_type_I==ACK);					//IMM_01
+			assert(seq_A==ack_B || seq_A+1==ack_B);	 	//IMM_02 
+			assert(seq_B==ack_A || seq_B+1==ack_A);	 	//IMM_03
 			I_to_B!rcv_type_I,rcv_I;
 			internet_state = CLOSED;
 			break;
@@ -273,8 +275,3 @@ init
 	run Internet();
 	run HostB();
 }
-
-
-//control flow graph
-//edge coverage
-//node coverage
