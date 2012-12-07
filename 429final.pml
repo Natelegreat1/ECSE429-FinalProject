@@ -149,6 +149,7 @@ proctype HostA()
 			{
 				B_to_A?FIN,rcv_A;
 				ack_A = rcv_A+1;
+				//ack_A = rcv_A + 2; //MUTANT_15
 				printf("ack: %d\n",ack_A);
 				A_to_I!ACK, ack_A;
 				hostA_state = TIME_WAIT; // hostA_state = CLOSING; //MUTANT_06
@@ -180,6 +181,7 @@ proctype HostB()
 			{
 				I_to_B?SYN,rcv_B;
 				ack_B = rcv_B+1;//dont check value of ack because its the first ack sent
+				//ack_B = rcv_B+2; //MUTANT_16
 				printf("ack: %d\n",ack_B);
 				printf("seq: %d\n",seq_B);
 				B_to_A!ACK,ack_B;//sent ack back first 
